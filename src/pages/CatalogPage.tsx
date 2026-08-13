@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Property, FilterState, DistrictBishkek } from '../types/property';
-import { getListings } from '../api/listings';
 import { PropertyCard } from '../components/PropertyCard';
+import { PropertySkeleton } from '../components/PropertySkeleton';
 
 interface CatalogPageProps {
+  properties: Property[];
   onSelectProperty: (property: Property) => void;
+  isLoading?: boolean; // Флаг загрузки данных
 }
 
 const DISTRICTS: (DistrictBishkek | 'all')[] = [
@@ -28,9 +30,7 @@ const ROOM_OPTIONS = [
   { label: '4+', value: 4 },
 ];
 
-export const CatalogPage: React.FC<CatalogPageProps> = ({ onSelectProperty }) => {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+export const CatalogPage: React.FC<CatalogPageProps> = ({ properties, onSelectProperty, isLoading = false }) => {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Состояние фильтров
@@ -42,29 +42,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ onSelectProperty }) =>
     type: 'all',
   });
 
-  // Загрузка объявлений с учетом фильтров
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-
-    getListings(filters)
-      .then((data) => {
-        if (isMounted) {
-          setProperties(data);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to fetch listings:', err);
-        if (isMounted) setLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [filters]);
-
-  // Дополнительная фильтрация по поисковой строке и ценовому диапазону
+  // Фильтрация актуального массива properties
   const filteredProperties = properties.filter((prop) => {
     const matchesSearch = 
       prop.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,8 +50,12 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ onSelectProperty }) =>
       prop.district.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesPrice = prop.priceUSD >= (filters.minPrice ?? 0) && prop.priceUSD <= (filters.maxPrice ?? 5000);
+    
+    const matchesDistrict = !filters.district || filters.district === 'all' || prop.district === filters.district;
+    
+    const matchesRooms = filters.rooms === null || (filters.rooms === 4 ? prop.rooms >= 4 : prop.rooms === filters.rooms);
 
-    return matchesSearch && matchesPrice;
+    return matchesSearch && matchesPrice && matchesDistrict && matchesRooms;
   });
 
   return (
@@ -163,10 +145,12 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ onSelectProperty }) =>
         </div>
       </div>
 
-      {/* Список или состояние загрузки */}
-      {loading ? (
-        <div className="text-center py-16 text-[var(--tg-theme-hint-color,#999999)] text-sm">
-          Загрузка объектов...
+      {/* Список карточек или скелетоны загрузки */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <PropertySkeleton key={n} />
+          ))}
         </div>
       ) : filteredProperties.length > 0 ? (
         <div className="grid grid-cols-2 gap-3">
@@ -179,8 +163,25 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ onSelectProperty }) =>
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 text-[var(--tg-theme-hint-color,#999999)] text-sm">
-          Ничего не найдено по вашим параметрам
+        <div className="text-center py-16 px-4">
+          <p className="text-sm text-[var(--tg-theme-hint-color,#999999)] mb-4">
+            Ничего не найдено по вашим параметрам
+          </p>
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              setFilters({
+                district: 'all',
+                rooms: null,
+                minPrice: 0,
+                maxPrice: 5000,
+                type: 'all',
+              });
+            }}
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] active:scale-95 transition-all border border-black/5"
+          >
+            Сбросить фильтры
+          </button>
         </div>
       )}
     </div>

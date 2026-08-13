@@ -17,7 +17,7 @@ export function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('catalog');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   
-  // Храним список объявлений в стейте, чтобы карта и каталог обновлялись синхронно
+  // Единый источник истины: список всех объявлений
   const [properties, setProperties] = useState<Property[]>(MOCK_PROPERTIES);
 
   const handleAddProperty = (newProperty: Property) => {
@@ -39,9 +39,12 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-[var(--tg-theme-bg-color,#ffffff)] text-[var(--tg-theme-text-color,#000000)] pb-[60px]">
-      {/* Рендеринг страниц */}
+      {/* Рендеринг страниц с прокидыванием актуального стейта */}
       {currentTab === 'catalog' && (
-        <CatalogPage onSelectProperty={setSelectedProperty} />
+        <CatalogPage 
+          properties={properties} 
+          onSelectProperty={setSelectedProperty} 
+        />
       )}
       
       {currentTab === 'map' && (

@@ -21,7 +21,7 @@ const DISTRICTS: DistrictBishkek[] = [
 ];
 
 export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty }) => {
-  const { user } = useTelegram();
+  const { user, MainButton } = useTelegram();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -33,7 +33,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
   const [district, setDistrict] = useState<DistrictBishkek>('Асанбай');
   const [address, setAddress] = useState('');
   const [type, setType] = useState<PropertyType>('apartment');
-  const [phone, setPhone] = useState('+996 ');
+  const [phone, setPhone] = useState('+');
   const [imageURL, setImageURL] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,7 +59,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
         maxZoom: 19,
       }).addTo(map);
 
-      // Ставим начальный маркер
+      // Векторная метка вместо эмодзи
       const customIcon = L.divIcon({
         className: 'custom-map-marker',
         html: `
@@ -73,18 +73,24 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             border: 2px solid white;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
           ">
-            📍 Вы здесь
+            <svg style="width: 12px; height: 12px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Вы здесь</span>
           </div>
         `,
-        iconSize: [60, 30],
-        iconAnchor: [30, 15],
+        iconSize: [80, 30],
+        iconAnchor: [40, 15],
       });
 
       const marker = L.marker(bishkekCenter, { icon: customIcon }).addTo(map);
       markerRef.current = marker;
 
-      // Обработка клика по карте
       map.on('click', (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
         setLat(lat);
@@ -113,8 +119,10 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
   const numArea = Number(area);
 
   const isFloorValid = numFloor > 0 && numFloor <= numTotalFloors;
+  
+  // Международная валидация: от 10 до 15 цифр
   const cleanPhone = phone.replace(/\D/g, '');
-  const isPhoneValid = cleanPhone.length === 12;
+  const isPhoneValid = cleanPhone.length >= 10 && cleanPhone.length <= 15;
   
   const isFieldsFilled = 
     title.trim().length >= 5 && 
@@ -124,11 +132,15 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
     isFloorValid && 
     isPhoneValid;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Логика отправки формы
+  const handleSubmit = async () => {
     if (!isFieldsFilled || isSubmitting) return;
 
     setIsSubmitting(true);
+    if (MainButton) {
+      MainButton.showProgress();
+      MainButton.setText('Публикация...');
+    }
 
     try {
       const propertyData = {
@@ -141,7 +153,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
         totalFloors: numTotalFloors,
         district,
         address: address.trim(),
-        latitude: lat, // Передаем реальные координаты с клика по карте
+        latitude: lat,
         longitude: lon,
         type,
         images: [
@@ -160,8 +172,35 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
       console.error('Error creating listing:', error);
     } finally {
       setIsSubmitting(false);
+      if (MainButton) {
+        MainButton.hideProgress();
+      }
     }
   };
+
+  // Управление Telegram MainButton
+  useEffect(() => {
+    if (!MainButton) return;
+
+    MainButton.setText('Опубликовать объект');
+
+    if (isFieldsFilled && !isSubmitting) {
+      MainButton.show();
+      MainButton.enable();
+    } else if (isSubmitting) {
+      MainButton.enable();
+    } else {
+      MainButton.show();
+      MainButton.disable();
+    }
+
+    MainButton.onClick(handleSubmit);
+
+    return () => {
+      MainButton.offClick(handleSubmit);
+      MainButton.hide();
+    };
+  }, [isFieldsFilled, isSubmitting, title, description, priceUSD, rooms, area, floor, totalFloors, district, address, phone, imageURL, lat, lon]);
 
   return (
     <div className="pb-36 px-4 pt-4 bg-[var(--tg-theme-bg-color,#ffffff)] min-h-screen">
@@ -174,7 +213,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         {/* Интерактивная карта для выбора точки */}
         <div>
           <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1.5">
@@ -306,33 +345,67 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
           <p className="text-[11px] text-red-500">Этаж не может превышать общее количество этажей.</p>
         )}
 
-        {/* Ссылка на фото */}
+        {/* Загрузка фото из галереи */}
         <div>
           <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1">
-            Ссылка на фото (URL)
+            Фотография объекта *
           </label>
+          
           <input
-            type="url"
-            placeholder="https://images.unsplash.com/..."
-            value={imageURL}
-            onChange={(e) => setImageURL(e.target.value)}
-            className="w-full bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] text-[var(--tg-theme-text-color,#000000)] text-sm rounded-2xl px-3.5 py-3 outline-none"
+            type="file"
+            accept="image/*"
+            id="property-image-input"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  setImageURL(reader.result as string);
+                };
+                reader.readAsDataURL(file);
+              }
+            }}
           />
+
+          <label 
+            htmlFor="property-image-input"
+            className="relative h-44 w-full rounded-2xl overflow-hidden bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] border-2 border-dashed border-[var(--tg-theme-hint-color,#8e8e93)]/30 flex flex-col items-center justify-center cursor-pointer hover:border-[var(--tg-theme-button-color,#2481cc)] transition-colors"
+          >
+            {imageURL ? (
+              <img 
+                src={imageURL} 
+                alt="Выбранное фото" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="text-xs text-[var(--tg-theme-hint-color,#8e8e93)] flex flex-col items-center gap-1.5 p-4 text-center">
+                <svg className="w-8 h-8 opacity-60 text-[var(--tg-theme-button-color,#2481cc)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="font-semibold text-[var(--tg-theme-text-color,#000000)]">Нажмите, чтобы выбрать фото из галереи</span>
+                <span>PNG, JPG или WEBP</span>
+              </div>
+            )}
+          </label>
         </div>
 
         {/* Телефон */}
         <div>
           <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1">
-            Телефон (+996...) *
+            Телефон в международном формате *
           </label>
           <input
             type="text"
+            placeholder="+996XXXXXXXXX или +7XXXXXXXXXX"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="w-full bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] text-[var(--tg-theme-text-color,#000000)] text-sm rounded-2xl px-3.5 py-3 outline-none"
           />
-          {!isPhoneValid && phone.length > 5 && (
-            <p className="text-[11px] text-red-500 mt-1">Формат: +996 и 9 цифр номера.</p>
+          {!isPhoneValid && phone.length > 2 && (
+            <p className="text-[11px] text-red-500 mt-1">
+              Укажите номер с кодом страны (от 10 до 15 цифр, например: +996..., +7...).
+            </p>
           )}
         </div>
 
@@ -349,22 +422,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
             className="w-full bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] text-[var(--tg-theme-text-color,#000000)] text-sm rounded-2xl px-3.5 py-3 outline-none resize-none"
           />
         </div>
-
-        {/* Фиксированная кнопка отправки */}
-        <div className="pt-4">
-          <button
-            type="submit"
-            disabled={!isFieldsFilled || isSubmitting}
-            className={`w-full py-3.5 rounded-2xl text-sm font-extrabold transition-all shadow-lg ${
-              isFieldsFilled && !isSubmitting
-                ? 'bg-[var(--tg-theme-button-color,#2481cc)] text-[var(--tg-theme-button-text-color,#ffffff)] active:scale-[0.98]'
-                : 'bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] text-[var(--tg-theme-hint-color,#8e8e93)] opacity-60 cursor-not-allowed'
-            }`}
-          >
-            {isSubmitting ? 'Публикация...' : isFieldsFilled ? 'Опубликовать объект' : 'Заполните обязательные поля (*)'}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 };

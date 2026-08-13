@@ -44,9 +44,12 @@ export const DetailPage: React.FC<DetailPageProps> = ({ property, onBack }) => {
         />
         <button 
           onClick={onBack}
-          className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1.5 rounded-full backdrop-blur-md text-xs font-bold shadow-md"
+          className="absolute top-4 left-4 bg-black/60 text-white px-3.5 py-2 rounded-xl backdrop-blur-md text-xs font-bold shadow-md flex items-center gap-1.5 transition-transform active:scale-95"
         >
-          ✕ Назад
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Назад</span>
         </button>
         <div className="absolute bottom-3 right-3 bg-[var(--tg-theme-button-color,#2481cc)] text-[var(--tg-theme-button-text-color,#ffffff)] px-3.5 py-1.5 rounded-2xl text-sm font-extrabold shadow-lg">
           ${property.priceUSD} <span className="text-xs font-normal opacity-90">/ мес</span>
@@ -67,9 +70,13 @@ export const DetailPage: React.FC<DetailPageProps> = ({ property, onBack }) => {
         <h1 className="text-lg font-extrabold text-[var(--tg-theme-text-color,#000000)] mt-1">
           {property.title}
         </h1>
-        <p className="text-xs text-[var(--tg-theme-hint-color,#999999)] mt-0.5">
-          📍 {property.address}
-        </p>
+        <div className="flex items-center gap-1 text-xs text-[var(--tg-theme-hint-color,#999999)] mt-1">
+          <svg className="w-3.5 h-3.5 text-[var(--tg-theme-button-color,#2481cc)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>{property.address}</span>
+        </div>
 
         {/* Характеристики (сетка в стиле ЦИАН) */}
         <div className="grid grid-cols-4 gap-2 my-4 bg-[var(--tg-theme-secondary-bg-color,#efeff3)] p-3 rounded-2xl text-center">

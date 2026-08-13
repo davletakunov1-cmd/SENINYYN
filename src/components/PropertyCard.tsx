@@ -31,10 +31,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect }
           {property.district}
         </div>
 
-        {/* Количество фото справа */}
+        {/* Количество фото с иконкой */}
         {property.images.length > 1 && (
-          <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md text-white px-2 py-1 rounded-xl text-[10px] font-medium border border-white/15">
-            📷 {property.images.length}
+          <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-[10px] font-medium border border-white/15 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>{property.images.length}</span>
           </div>
         )}
 
@@ -61,7 +64,12 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect }
         </div>
 
         <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--tg-theme-hint-color,#8e8e93)]/10 text-[10px] text-[var(--tg-theme-hint-color,#8e8e93)]">
-          <span className="font-medium">Этаж {property.floor} из {property.totalFloors}</span>
+          <div className="flex items-center gap-1 font-medium">
+            <svg className="w-3 h-3 text-[var(--tg-theme-hint-color,#8e8e93)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span>Этаж {property.floor}/{property.totalFloors}</span>
+          </div>
           <span className="font-semibold text-[var(--tg-theme-button-color,#2481cc)]">Без комиссии</span>
         </div>
       </div>
