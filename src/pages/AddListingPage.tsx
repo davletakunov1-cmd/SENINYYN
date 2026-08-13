@@ -36,6 +36,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
   const [phone, setPhone] = useState('+');
   const [imageURL, setImageURL] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Координаты по умолчанию (центр Бишкека) и выбранный маркер
   const [lat, setLat] = useState<number>(42.8746);
@@ -51,7 +52,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
       const bishkekCenter: [number, number] = [42.8746, 74.6122];
 
       const map = L.map(mapRef.current, {
-        zoomControl: false,
+        zoomControl: true, // Включаем зум, чтобы можно было приближать/отдалять
       }).setView(bishkekCenter, 13);
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -103,7 +104,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
 
       mapInstanceRef.current = map;
 
-      // Принудительный пересчет размеров тайлов, чтобы карта не ломалась/не зависала наполовину
+      // Принудительный пересчет размеров тайлов
       setTimeout(() => {
         map.invalidateSize();
       }, 150);
@@ -116,6 +117,15 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
       }
     };
   }, []);
+
+  // Пересчет размеров карты при изменении полноэкранного режима
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      setTimeout(() => {
+        mapInstanceRef.current?.invalidateSize();
+      }, 200);
+    }
+  }, [isFullscreen]);
 
   // Валидация
   const numFloor = Number(floor);
@@ -219,15 +229,38 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
       </div>
 
       <div className="space-y-4">
-        {/* Интерактивная карта для выбора точки (с фиксированной высотой) */}
+        {/* Интерактивная карта с кнопкой полного экрана */}
         <div>
           <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1.5">
             Кликните на карту, чтобы поставить метку дома *
           </label>
-          <div className="relative w-full rounded-2xl overflow-hidden border border-black/10 shadow-inner" style={{ height: '210px' }}>
+          <div 
+            className={`relative w-full rounded-2xl overflow-hidden border border-black/10 shadow-inner transition-all duration-300 ${
+              isFullscreen ? 'fixed inset-0 z-50 rounded-none h-screen bg-white' : 'h-[210px]'
+            }`}
+          >
+            {/* Кнопка сворачивания/разворачивания на весь экран */}
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="absolute top-3 right-3 z-20 bg-white/90 hover:bg-white text-black p-2.5 rounded-full shadow-lg backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
+              title={isFullscreen ? "Свернуть" "}
+            >
+              {isFullscreen ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              )}
+            </button>
+
             <div ref={mapRef} className="w-full h-full z-0" />
-            <div className="absolute bottom-2 left-2 right-2 z-10 bg-black/60 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-xl text-center font-medium">
-              Координаты: {lat.toFixed(4)}, {lon.toFixed(4)}
+            
+            <div className="absolute bottom-3 left-3 right-3 z-10 bg-black/60 backdrop-blur-md text-white text-[10px] px-3 py-2 rounded-xl text-center font-medium shadow-md">
+              Координаты: {lat.toFixed(4)}, {lon.toFixed(4)} {isFullscreen && '• Нажмите на карту, чтобы выбрать точку'}
             </div>
           </div>
         </div>
