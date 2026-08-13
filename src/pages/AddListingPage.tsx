@@ -102,6 +102,11 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
       });
 
       mapInstanceRef.current = map;
+
+      // Принудительный пересчет размеров тайлов, чтобы карта не ломалась/не зависала наполовину
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 150);
     }
 
     return () => {
@@ -214,12 +219,12 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
       </div>
 
       <div className="space-y-4">
-        {/* Интерактивная карта для выбора точки */}
+        {/* Интерактивная карта для выбора точки (с фиксированной высотой) */}
         <div>
           <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1.5">
             Кликните на карту, чтобы поставить метку дома *
           </label>
-          <div className="relative h-52 w-full rounded-2xl overflow-hidden border border-black/10 shadow-inner">
+          <div className="relative w-full rounded-2xl overflow-hidden border border-black/10 shadow-inner" style={{ height: '210px' }}>
             <div ref={mapRef} className="w-full h-full z-0" />
             <div className="absolute bottom-2 left-2 right-2 z-10 bg-black/60 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-xl text-center font-medium">
               Координаты: {lat.toFixed(4)}, {lon.toFixed(4)}
@@ -345,7 +350,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
           <p className="text-[11px] text-red-500">Этаж не может превышать общее количество этажей.</p>
         )}
 
-        {/* Загрузка фото из галереи */}
+        {/* Загрузка фото из галереи устройства */}
         <div>
           <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1">
             Фотография объекта *
