@@ -2,7 +2,6 @@ import React from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 
 export const Header: React.FC = () => {
-  // Используем корректные названия из твоего useTelegram хука
   const { user, onClose, tg } = useTelegram();
   const isTelegram = Boolean(tg);
 
