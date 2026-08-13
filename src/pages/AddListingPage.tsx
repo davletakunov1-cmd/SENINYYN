@@ -244,7 +244,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="absolute top-3 right-3 z-20 bg-white/90 hover:bg-white text-black p-2.5 rounded-full shadow-lg backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
-              title={isFullscreen ? "Свернуть" "}
+              title={isFullscreen ? "Свернуть" : "На весь экран"}
             >
               {isFullscreen ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
