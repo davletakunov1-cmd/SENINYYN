@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 
-// 1. Типизация объекта Telegram WebApp (частичная, только то, что используем)
+// 1. Типизация объекта Telegram WebApp
 export interface TelegramUser {
   id: number;
   first_name: string;
@@ -27,10 +27,11 @@ interface TelegramWebApp {
   viewportHeight: number;
   viewportStableHeight: number;
   
-  // Методы, которые мы используем
+  // Методы и свойства
   ready: () => void;
   expand: () => void;
   close: () => void;
+  setHeaderColor: (color: string) => void; // Добавили метод, чтобы не было ошибки TS
   MainButton: {
     text: string;
     color: string;
@@ -55,7 +56,6 @@ interface TelegramWebApp {
     onClick: (callback: VoidFunction) => void;
     offClick: (callback: VoidFunction) => void;
   };
-  // Дополнительные методы для открытия ссылок/профилей
   openTelegramLink: (url: string) => void;
   openInvoice: (url: string, callback?: (status: string) => void) => void;
   showPopup: (params: any, callback?: (button_id: string) => void) => void;
@@ -80,37 +80,36 @@ interface TelegramContextType {
 
 const TelegramContext = createContext<TelegramContextType>({});
 
-// 3. Провайдер-компонент (Оборачиваем им все приложение в index.tsx)
+// 3. Провайдер-компонент
 export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [webApp, setWebApp] = useState<TelegramWebApp>();
 
   useEffect(() => {
-    // При монтировании компонента инициализируем WebApp
     const app = window.Telegram?.WebApp;
     
     if (app) {
-      app.ready(); // Сообщаем Telegram, что приложение готово
-      // app.expand(); // Раскрываем на весь экран (по желанию)
+      app.ready();
       setWebApp(app);
       
-      // Применяем CSS-переменные темы Telegram к body для использования в Tailwind
-      // Например, var(--tg-theme-bg-color)
-      app.setHeaderColor('secondary_bg_color');
+      try {
+        app.setHeaderColor('secondary_bg_color');
+      } catch (e) {
+        // Игнорируем, если версия ТГ не поддерживает
+      }
     }
   }, []);
 
-  // Мемоизация значения контекста, чтобы избежать лишних ре-рендеров
   const value = useMemo(() => {
     return {
       webApp,
-      user: webApp?.initDataUnsafe?.user, // Безопасно достаем юзера
+      user: webApp?.initDataUnsafe?.user,
     };
   }, [webApp]);
 
   return React.createElement(TelegramContext.Provider, { value }, children);
 };
 
-// 4. Кастомный хук для использования контекста в компонентах
+// 4. Кастомный хук для использования контекста
 export const useTelegram = () => {
   const context = useContext(TelegramContext);
   
@@ -118,15 +117,17 @@ export const useTelegram = () => {
     throw new Error('useTelegram must be used within a TelegramProvider');
   }
 
-  // Возвращаем удобные методы и данные
+  // Возвращаем и оригинальные поля, и алиасы для полной совместимости с компонентами
   return {
     ...context,
-    // Вспомогательные флаги
+    tg: context.webApp, // Алиас для тех компонентов, которые ждут tg
     isSupported: !!window.Telegram?.WebApp,
-    isTelegram: !!window.Telegram?.WebApp.initData,
-    // Удобный доступ к методам
+    isTelegram: Boolean(window.Telegram?.WebApp?.initData),
     closeApp: () => context.webApp?.close(),
+    onClose: () => context.webApp?.close(), // Алиас для Header.tsx
     mainButton: context.webApp?.MainButton,
+    MainButton: context.webApp?.MainButton, // Алиас с большой буквы
     backButton: context.webApp?.BackButton,
+    BackButton: context.webApp?.BackButton, // Алиас с большой буквы
   };
 };
