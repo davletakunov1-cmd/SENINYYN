@@ -6,6 +6,7 @@ import { createListing } from '../api/listings';
 
 interface AddListingPageProps {
   onAddProperty: (newProperty: Property) => void;
+  onBack: () => void; // <--- Пропс для возврата в каталог
 }
 
 const DISTRICTS: DistrictBishkek[] = [
@@ -20,7 +21,7 @@ const DISTRICTS: DistrictBishkek[] = [
   'Джал',
 ];
 
-export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty }) => {
+export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty, onBack }) => {
   const { user, MainButton } = useTelegram();
 
   const [title, setTitle] = useState('');
@@ -46,13 +47,19 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
 
+  const triggerHaptic = () => {
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.selectionChanged();
+    }
+  };
+
   // Инициализация мини-карты для выбора точки
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
       const bishkekCenter: [number, number] = [42.8746, 74.6122];
 
       const map = L.map(mapRef.current, {
-        zoomControl: true, // Включаем зум, чтобы можно было приближать/отдалять
+        zoomControl: true,
       }).setView(bishkekCenter, 13);
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -60,7 +67,6 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
         maxZoom: 19,
       }).addTo(map);
 
-      // Векторная метка вместо эмодзи
       const customIcon = L.divIcon({
         className: 'custom-map-marker',
         html: `
@@ -104,7 +110,6 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
 
       mapInstanceRef.current = map;
 
-      // Принудительный пересчет размеров тайлов
       setTimeout(() => {
         map.invalidateSize();
       }, 150);
@@ -118,7 +123,6 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
     };
   }, []);
 
-  // Пересчет размеров карты при изменении полноэкранного режима
   useEffect(() => {
     if (mapInstanceRef.current) {
       setTimeout(() => {
@@ -127,7 +131,6 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
     }
   }, [isFullscreen]);
 
-  // Валидация
   const numFloor = Number(floor);
   const numTotalFloors = Number(totalFloors);
   const numPrice = Number(priceUSD);
@@ -135,7 +138,6 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
 
   const isFloorValid = numFloor > 0 && numFloor <= numTotalFloors;
   
-  // Международная валидация: от 10 до 15 цифр
   const cleanPhone = phone.replace(/\D/g, '');
   const isPhoneValid = cleanPhone.length >= 10 && cleanPhone.length <= 15;
   
@@ -147,7 +149,6 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
     isFloorValid && 
     isPhoneValid;
 
-  // Логика отправки формы
   const handleSubmit = async () => {
     if (!isFieldsFilled || isSubmitting) return;
 
@@ -193,7 +194,6 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
     }
   };
 
-  // Управление Telegram MainButton
   useEffect(() => {
     if (!MainButton) return;
 
@@ -219,11 +219,30 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
 
   return (
     <div className="pb-36 px-4 pt-4 bg-[var(--tg-theme-bg-color,#ffffff)] min-h-screen">
+      
+      {/* Шапка с кнопкой возврата назад */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => {
+            triggerHaptic();
+            onBack();
+          }}
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] px-3.5 py-2 rounded-xl transition-all active:scale-95"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+          В каталог
+        </button>
+        <div>
+          <h1 className="text-base font-extrabold text-[var(--tg-theme-text-color,#000000)] text-right">
+            Добавить объект
+          </h1>
+        </div>
+      </div>
+
       <div className="mb-4">
-        <h1 className="text-xl font-extrabold text-[var(--tg-theme-text-color,#000000)]">
-          Добавить объект в Бишкеке
-        </h1>
-        <p className="text-xs text-[var(--tg-theme-hint-color,#8e8e93)] mt-0.5">
+        <p className="text-xs text-[var(--tg-theme-hint-color,#8e8e93)]">
           Укажите точное положение дома на карте
         </p>
       </div>
@@ -239,11 +258,10 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty })
               isFullscreen ? 'fixed inset-0 z-50 rounded-none h-screen bg-white' : 'h-[210px]'
             }`}
           >
-            {/* Кнопка сворачивания/разворачивания на весь экран */}
             <button
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="absolute top-3 right-3 z-20 bg-white/90 hover:bg-white text-black p-2.5 rounded-full shadow-lg backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
+              className="absolute top-3 right-3 z-20 bg-white/95 hover:bg-white text-black p-2.5 rounded-full shadow-lg backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
               title={isFullscreen ? "Свернуть" : "На весь экран"}
             >
               {isFullscreen ? (

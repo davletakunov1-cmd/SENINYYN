@@ -6,7 +6,7 @@ import { PropertySkeleton } from '../components/PropertySkeleton';
 interface CatalogPageProps {
   properties: Property[];
   onSelectProperty: (property: Property) => void;
-  onNavigateToAdd: () => void; // <--- добавили в пропсы
+  onNavigateToAdd: () => void;
   isLoading?: boolean;
 }
 
@@ -54,14 +54,6 @@ const CATEGORIES = [
   },
 ];
 
-const QUICK_ROOMS = [
-  { label: 'Все', value: null },
-  { label: '1к', value: 1 },
-  { label: '2к', value: 2 },
-  { label: '3к', value: 3 },
-  { label: '4+', value: 4 },
-];
-
 const DISTRICTS = [
   { label: 'Все районы', value: 'all' },
   { label: 'Первомайский', value: 'Первомайский' },
@@ -69,6 +61,8 @@ const DISTRICTS = [
   { label: 'Октябрьский', value: 'Октябрьский' },
   { label: 'Ленинский', value: 'Ленинский' },
 ];
+
+const PAGE_SIZE = 15; // Порция загрузки
 
 export const CatalogPage: React.FC<CatalogPageProps> = ({ 
   properties, 
@@ -79,6 +73,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [displayLimit, setDisplayLimit] = useState<number>(PAGE_SIZE);
   const [isPending, startTransition] = useTransition();
 
   const [filters, setFilters] = useState<Partial<FilterState>>({
@@ -114,6 +109,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     }).sort((a, b) => b.id.localeCompare(a.id));
   }, [properties, searchQuery, filters, selectedCategory]);
 
+  // Обрезанный список для отображения (пагинация)
+  const visibleProperties = useMemo(() => {
+    return filteredProperties.slice(0, displayLimit);
+  }, [filteredProperties, displayLimit]);
+
   const triggerHaptic = () => {
     if (window.Telegram?.WebApp?.HapticFeedback) {
       window.Telegram.WebApp.HapticFeedback.selectionChanged();
@@ -132,6 +132,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const handleCategoryClick = (catType: string, isMore?: boolean) => {
     triggerHaptic();
     const targetCategory = isMore ? 'all' : catType;
+    setDisplayLimit(PAGE_SIZE); // Сбрасываем пагинацию при смене категории
 
     if (selectedCategory === targetCategory) {
       setIsFilterModalOpen(true);
@@ -154,7 +155,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         <button 
           onClick={() => {
             triggerHaptic();
-            onNavigateToAdd(); // <--- переключаем на вкладку добавления
+            onNavigateToAdd();
           }}
           className="text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-4 py-2.5 rounded-xl transition-all shadow-md shadow-orange-500/20 active:scale-95"
         >
@@ -176,7 +177,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             value={searchQuery}
             onChange={(e) => {
               const val = e.target.value;
-              startTransition(() => setSearchQuery(val));
+              startTransition(() => {
+                setSearchQuery(val);
+                setDisplayLimit(PAGE_SIZE);
+              });
             }}
             className="w-full bg-white text-slate-900 placeholder-slate-400 text-xs rounded-2xl pl-11 pr-4 py-4 outline-none font-semibold shadow-xs border border-slate-200 focus:border-blue-600 transition-all"
           />
@@ -238,30 +242,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         })}
       </div>
 
-      {/* Быстрые фильтры по комнатам */}
-      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Комнаты:</span>
-        {QUICK_ROOMS.map((room) => {
-          const isSelected = filters.rooms === room.value;
-          return (
-            <button
-              key={room.label}
-              onClick={() => {
-                triggerHaptic();
-                setFilters(prev => ({ ...prev, rooms: room.value }));
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                isSelected
-                  ? 'bg-blue-600 text-white border-transparent shadow-sm'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {room.label}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Модальное окно фильтров */}
       {isFilterModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200">
@@ -287,7 +267,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Район</span>
                 <select
                   value={filters.district || 'all'}
-                  onChange={(e) => setFilters(prev => ({ ...prev, district: e.target.value }))}
+                  onChange={(e) => {
+                    setFilters(prev => ({ ...prev, district: e.target.value }));
+                    setDisplayLimit(PAGE_SIZE);
+                  }}
                   className="w-full bg-slate-50 text-xs p-3.5 rounded-xl outline-none font-semibold text-slate-900 border border-slate-200 focus:border-blue-600"
                 >
                   {DISTRICTS.map((d) => (
@@ -303,14 +286,20 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     type="number"
                     placeholder="От $0"
                     value={filters.minPrice || ''}
-                    onChange={(e) => setFilters(prev => ({ ...prev, minPrice: Number(e.target.value) }))}
+                    onChange={(e) => {
+                      setFilters(prev => ({ ...prev, minPrice: Number(e.target.value) }));
+                      setDisplayLimit(PAGE_SIZE);
+                    }}
                     className="bg-slate-50 text-xs p-3.5 rounded-xl outline-none font-semibold text-slate-900 border border-slate-200 focus:border-blue-600"
                   />
                   <input
                     type="number"
                     placeholder="До $5000"
                     value={filters.maxPrice === 5000 ? '' : filters.maxPrice}
-                    onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value ? Number(e.target.value) : 5000 }))}
+                    onChange={(e) => {
+                      setFilters(prev => ({ ...prev, maxPrice: e.target.value ? Number(e.target.value) : 5000 }));
+                      setDisplayLimit(PAGE_SIZE);
+                    }}
                     className="bg-slate-50 text-xs p-3.5 rounded-xl outline-none font-semibold text-slate-900 border border-slate-200 focus:border-blue-600"
                   />
                 </div>
@@ -321,6 +310,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   onClick={() => {
                     triggerHaptic();
                     setFilters({ district: 'all', rooms: null, minPrice: 0, maxPrice: 5000 });
+                    setDisplayLimit(PAGE_SIZE);
                   }}
                   className="w-full py-2.5 text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
                 >
@@ -361,15 +351,40 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             <PropertySkeleton key={n} />
           ))}
         </div>
-      ) : filteredProperties.length > 0 ? (
+      ) : visibleProperties.length > 0 ? (
         <div className="flex flex-col gap-4">
-          {filteredProperties.map((property) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              onSelect={onSelectProperty}
-            />
-          ))}
+          <div className="grid grid-cols-2 gap-3.5">
+            {visibleProperties.map((property, index) => {
+              // Каждая 6-я карточка широкая (раз в 6 элементов динамика смотрится аккуратно)
+              const isWide = index % 6 === 0;
+              return (
+                <div 
+                  key={property.id} 
+                  className={isWide ? 'col-span-2' : 'col-span-1'}
+                >
+                  <PropertyCard
+                    property={property}
+                    onSelect={onSelectProperty}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Кнопка «Загрузить еще» */}
+          {displayLimit < filteredProperties.length && (
+            <div className="pt-4 pb-2 text-center">
+              <button
+                onClick={() => {
+                  triggerHaptic();
+                  setDisplayLimit(prev => prev + PAGE_SIZE);
+                }}
+                className="w-full py-3.5 bg-white border border-slate-200 text-slate-900 font-bold text-xs rounded-2xl shadow-xs hover:bg-slate-100 transition-all active:scale-95"
+              >
+                Загрузить еще ({filteredProperties.length - displayLimit} осталось)
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-16">
@@ -380,6 +395,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
               setSearchQuery('');
               setSelectedCategory('all');
               setFilters({ district: 'all', rooms: null, minPrice: 0, maxPrice: 5000 });
+              setDisplayLimit(PAGE_SIZE);
             }}
             className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20"
           >

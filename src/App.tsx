@@ -47,7 +47,10 @@ export function App() {
       )}
       
       {currentScreen === 'add' && (
-        <AddListingPage onAddProperty={handleAddProperty} />
+        <AddListingPage 
+          onAddProperty={handleAddProperty} 
+          onBack={() => setCurrentScreen('catalog')} 
+        />
       )}
     </div>
   );
