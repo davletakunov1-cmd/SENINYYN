@@ -14,7 +14,7 @@ const CATEGORIES = [
     id: 'buy', 
     label: 'Купить', 
     type: 'sale',
-    image: '/images/cat-buy.png' // Положи картинку в public/images/
+    image: '/images/cat-buy.png'
   },
   { 
     id: 'rent', 
@@ -32,7 +32,8 @@ const CATEGORIES = [
     id: 'new', 
     label: 'Новостройки', 
     type: 'new',
-    image: '/images/cat-new.png'
+    image: '/images/cat-new.png',
+    imageClassName: 'w-24 h-24 -right-2 -bottom-2 scale-125' // Увеличили размер и чуть сдвинули за границы
   },
   { 
     id: 'daily', 
@@ -181,9 +182,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 {cat.label}
               </span>
 
-              {/* Графика в правом нижнем углу */}
+              {/* Графика в правом нижнем углу с кастомными стилями */}
               {cat.image ? (
-                <div className="absolute right-0 bottom-0 w-16 h-16 pointer-events-none flex items-end justify-end p-1">
+                <div className={`absolute pointer-events-none flex items-end justify-end ${cat.imageClassName || 'right-0 bottom-0 w-16 h-16 p-1'}`}>
                   <img src={cat.image} alt={cat.label} className="w-full h-full object-contain" />
                 </div>
               ) : cat.isMore ? (
