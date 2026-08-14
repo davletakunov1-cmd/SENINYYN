@@ -15,35 +15,35 @@ const CATEGORIES = [
     label: 'Купить', 
     type: 'sale',
     image: '/images/cat-buy.png',
-    imageClassName: 'w-24 h-24 -right-2 -bottom-2' // Крупный домик
+    imageClassName: 'w-28 h-28 -right-4 -bottom-4 object-contain'
   },
   { 
     id: 'rent', 
     label: 'Снять', 
     type: 'rent',
     image: '/images/cat-rent.png',
-    imageClassName: 'w-16 h-16 -right-1 -bottom-1 scale-110' // Кресло поменьше, чтобы не упиралось
+    imageClassName: 'w-32 h-32 -right-5 -bottom-5 object-contain'
   },
   { 
     id: 'commercial', 
     label: 'Коммерческая', 
     type: 'commercial',
     image: '/images/cat-commercial.png',
-    imageClassName: 'w-20 h-20 -right-2 -bottom-2 scale-125' // Монета с легким наездом на край
+    imageClassName: 'w-28 h-28 -right-4 -bottom-4 object-contain'
   },
   { 
     id: 'new', 
     label: 'Новостройки', 
     type: 'new',
     image: '/images/cat-new.png',
-    imageClassName: 'w-24 h-24 -right-1 -bottom-1 scale-110' // Крупный кран
+    imageClassName: 'w-28 h-28 -right-4 -bottom-4 object-contain'
   },
   { 
     id: 'daily', 
     label: 'Посуточно', 
     type: 'daily',
     image: '/images/cat-daily.png',
-    imageClassName: 'w-20 h-20 -right-2 -bottom-2' 
+    imageClassName: 'w-28 h-28 -right-4 -bottom-4 object-contain'
   },
   { 
     id: 'all', 
@@ -162,7 +162,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2.5 mb-4">
+      <div className="grid grid-cols-3 gap-3 mb-4 pt-2">
         {CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat.type;
           return (
@@ -172,22 +172,23 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 triggerHaptic();
                 setSelectedCategory(cat.isMore ? 'all' : (isActive ? 'all' : cat.type));
               }}
-              className={`relative overflow-hidden p-3 rounded-2xl text-left transition-all border h-28 flex flex-col justify-between ${
+              className={`relative overflow-visible p-3.5 rounded-2xl text-left transition-all border h-28 flex flex-col justify-between ${
                 isActive
-                  ? 'bg-[var(--tg-theme-text-color,#000000)] text-[var(--tg-theme-bg-color,#ffffff)] border-transparent shadow-md'
+                  ? 'bg-[var(--tg-theme-text-color,#000000)] text-[var(--tg-theme-bg-color,#ffffff)] border-transparent shadow-lg'
                   : 'bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] border-black/5 hover:border-black/10'
               }`}
             >
-              <span className="text-xs font-extrabold tracking-tight z-10">
+              {/* Улучшенная типографика: увеличенный размер, полужирный шрифт и аккуратный межстрочный интервал */}
+              <span className="text-[13px] font-bold tracking-tight leading-snug z-10 max-w-[75%]">
                 {cat.label}
               </span>
 
               {cat.image ? (
-                <div className={`absolute pointer-events-none flex items-end justify-end ${cat.imageClassName || 'right-0 bottom-0 w-16 h-16 p-1'}`}>
-                  <img src={cat.image} alt={cat.label} className="w-full h-full object-contain" />
+                <div className={`absolute pointer-events-none flex items-end justify-end z-20 ${cat.imageClassName || 'w-28 h-28 -right-4 -bottom-4'}`}>
+                  <img src={cat.image} alt={cat.label} className="w-full h-full object-contain drop-shadow-md" />
                 </div>
               ) : cat.isMore ? (
-                <div className="absolute right-3 bottom-3 w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-[var(--tg-theme-text-color,#000000)]">
+                <div className="absolute right-3 bottom-3 w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-[var(--tg-theme-text-color,#000000)] z-20">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
