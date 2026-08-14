@@ -14,32 +14,36 @@ const CATEGORIES = [
     id: 'buy', 
     label: 'Купить', 
     type: 'sale',
-    image: '/images/cat-buy.png'
+    image: '/images/cat-buy.png',
+    imageClassName: 'w-24 h-24 -right-2 -bottom-2' // Крупный домик
   },
   { 
     id: 'rent', 
     label: 'Снять', 
     type: 'rent',
-    image: '/images/cat-rent.png'
+    image: '/images/cat-rent.png',
+    imageClassName: 'w-16 h-16 -right-1 -bottom-1 scale-110' // Кресло поменьше, чтобы не упиралось
   },
   { 
     id: 'commercial', 
     label: 'Коммерческая', 
     type: 'commercial',
-    image: '/images/cat-commercial.png'
+    image: '/images/cat-commercial.png',
+    imageClassName: 'w-20 h-20 -right-2 -bottom-2 scale-125' // Монета с легким наездом на край
   },
   { 
     id: 'new', 
     label: 'Новостройки', 
     type: 'new',
     image: '/images/cat-new.png',
-    imageClassName: 'w-24 h-24 -right-2 -bottom-2 scale-125' // Увеличили размер и чуть сдвинули за границы
+    imageClassName: 'w-24 h-24 -right-1 -bottom-1 scale-110' // Крупный кран
   },
   { 
     id: 'daily', 
     label: 'Посуточно', 
     type: 'daily',
-    image: '/images/cat-daily.png'
+    image: '/images/cat-daily.png',
+    imageClassName: 'w-20 h-20 -right-2 -bottom-2' 
   },
   { 
     id: 'all', 
@@ -107,7 +111,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   return (
     <div className="pb-32 px-4 pt-4 max-w-xl mx-auto bg-[var(--tg-theme-bg-color,#ffffff)] min-h-screen">
       
-      {/* Шапка с локацией */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-1.5 cursor-pointer">
           <span className="text-sm font-extrabold text-[var(--tg-theme-text-color,#000000)]">Бишкек и область</span>
@@ -123,7 +126,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         </button>
       </div>
 
-      {/* Строка поиска и кнопка фильтра */}
       <div className="flex gap-2.5 mb-4">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -160,7 +162,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         </button>
       </div>
 
-      {/* Сетка категорий 3х2 (как на референсе) */}
       <div className="grid grid-cols-3 gap-2.5 mb-4">
         {CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat.type;
@@ -177,12 +178,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   : 'bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] border-black/5 hover:border-black/10'
               }`}
             >
-              {/* Текст в левом верхнем углу */}
               <span className="text-xs font-extrabold tracking-tight z-10">
                 {cat.label}
               </span>
 
-              {/* Графика в правом нижнем углу с кастомными стилями */}
               {cat.image ? (
                 <div className={`absolute pointer-events-none flex items-end justify-end ${cat.imageClassName || 'right-0 bottom-0 w-16 h-16 p-1'}`}>
                   <img src={cat.image} alt={cat.label} className="w-full h-full object-contain" />
@@ -199,7 +198,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         })}
       </div>
 
-      {/* Быстрые фильтры комнат */}
       <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
         <span className="text-[11px] font-bold text-[var(--tg-theme-hint-color,#8e8e93)] uppercase tracking-wider mr-1">Комнаты:</span>
         {QUICK_ROOMS.map((room) => {
@@ -223,7 +221,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         })}
       </div>
 
-      {/* Панель детальных фильтров */}
       {isFilterOpen && (
         <div className="mb-4 p-4 bg-[var(--tg-theme-secondary-bg-color,#efeff3)] rounded-2xl border border-black/5 animate-in fade-in duration-200">
           <div className="flex justify-between items-center mb-3">
@@ -254,7 +251,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         </div>
       )}
 
-      {/* Лента объектов */}
       <div className="flex items-center justify-between mb-3.5">
         <h2 className="text-base font-black tracking-tight text-[var(--tg-theme-text-color,#000000)]">
           Могут подойти
