@@ -165,4 +165,4 @@ app.get('/api/get-phone', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🌐 Бэкенд сервер запущен на порту ${PORT}`);
-});
+})

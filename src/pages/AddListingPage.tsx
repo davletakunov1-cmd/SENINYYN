@@ -74,7 +74,7 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty, o
     }
   };
 
-  // ... (логика карты остается прежней)
+  // Инициализация карты
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
       const map = L.map(mapRef.current).setView([42.8746, 74.6122], 13);
@@ -113,10 +113,28 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty, o
 
   return (
     <div className="pb-36 px-4 pt-4 bg-[var(--tg-theme-bg-color,#ffffff)] min-h-screen">
-      {/* ... (Твой заголовок и карта) ... */}
       
-      {/* Обновленный блок телефона */}
-      <div className="mt-6">
+      {/* Кнопка назад */}
+      <button onClick={onBack} className="mb-4 text-sm text-[var(--tg-theme-button-color,#2481cc)] font-medium">
+        ← Назад к списку
+      </button>
+
+      <h1 className="text-xl font-bold mb-4 text-[var(--tg-theme-text-color,#000000)]">Создать объявление</h1>
+
+      {/* Название */}
+      <div className="mb-4">
+        <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1.5 uppercase">Заголовок *</label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Например: 2-комнатная квартира, 60 м²"
+          className="w-full bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] text-[var(--tg-theme-text-color,#000000)] text-sm rounded-2xl px-4 py-3.5 outline-none"
+        />
+      </div>
+
+      {/* Блок верификации телефона */}
+      <div className="mt-6 mb-4">
         <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1.5 uppercase">
           Телефон (подтвержден через Telegram) *
         </label>
@@ -132,12 +150,36 @@ export const AddListingPage: React.FC<AddListingPageProps> = ({ onAddProperty, o
           <p className="text-[11px] text-emerald-600 mt-1.5 font-medium">✓ Номер подтвержден и защищен.</p>
         ) : (
           <div className="mt-2 text-xs text-[var(--tg-theme-hint-color,#8e8e93)] bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] p-3 rounded-2xl">
-            Чтобы опубликовать, перейдите в <b><a href="https://t.me/ТВОЙ_БОТ" target="_blank">Telegram-бота</a></b> и подтвердите номер.
+            Чтобы опубликовать, перейдите в <b><a href="https://t.me/ТВОЙ_БОТ" target="_blank" rel="noreferrer" className="text-blue-500 underline">Telegram-бота</a></b> и подтвердите номер.
           </div>
         )}
       </div>
 
-      {/* ... (остальные поля) ... */}
+      {/* Цена */}
+      <div className="mb-4">
+        <label className="block text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)] mb-1.5 uppercase">Цена ($ в месяц) *</label>
+        <input
+          type="number"
+          value={priceUSD}
+          onChange={(e) => setPriceUSD(e.target.value)}
+          placeholder="500"
+          className="w-full bg-[var(--tg-theme-secondary-bg-color,#f4f4f6)] text-[var(--tg-theme-text-color,#000000)] text-sm rounded-2xl px-4 py-3.5 outline-none"
+        />
+      </div>
+
+      {/* Кнопка отправки */}
+      <button
+        onClick={handleSubmit}
+        disabled={!isFieldsFilled || isSubmitting}
+        className={`w-full py-4 rounded-2xl font-semibold text-white mt-6 transition-all ${
+          isFieldsFilled && !isSubmitting 
+            ? 'bg-[var(--tg-theme-button-color,#2481cc)] opacity-100 cursor-pointer' 
+            : 'bg-gray-400 opacity-50 cursor-not-allowed'
+        }`}
+      >
+        {isSubmitting ? 'Публикация...' : 'Опубликовать объявление'}
+      </button>
+
     </div>
   );
 };
