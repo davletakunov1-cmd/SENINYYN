@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useTransition } from 'react';
-import { Property, FilterState, DistrictBishkek } from '../types/property';
+import { Property, FilterState } from '../types/property';
 import { PropertyCard } from '../components/PropertyCard';
 import { PropertySkeleton } from '../components/PropertySkeleton';
 
@@ -9,25 +9,51 @@ interface CatalogPageProps {
   isLoading?: boolean;
 }
 
-const DISTRICTS: (DistrictBishkek | 'all')[] = [
-  'all',
-  'ЦУМ / Центр',
-  'Южные ворота',
-  'Асанбай',
-  'Джал',
-  'Свердловский район',
-  'Первомайский район',
-  'Октябрьский район',
-  'Ленинский район',
-  'Рабочий поселок',
+const CATEGORIES = [
+  { 
+    id: 'buy', 
+    label: 'Купить', 
+    type: 'sale',
+    image: '/images/cat-buy.png' // Положи картинку в public/images/
+  },
+  { 
+    id: 'rent', 
+    label: 'Снять', 
+    type: 'rent',
+    image: '/images/cat-rent.png'
+  },
+  { 
+    id: 'commercial', 
+    label: 'Коммерческая', 
+    type: 'commercial',
+    image: '/images/cat-commercial.png'
+  },
+  { 
+    id: 'new', 
+    label: 'Новостройки', 
+    type: 'new',
+    image: '/images/cat-new.png'
+  },
+  { 
+    id: 'daily', 
+    label: 'Посуточно', 
+    type: 'daily',
+    image: '/images/cat-daily.png'
+  },
+  { 
+    id: 'all', 
+    label: 'Все категории', 
+    type: 'all',
+    isMore: true
+  },
 ];
 
-const ROOM_OPTIONS = [
+const QUICK_ROOMS = [
   { label: 'Все', value: null },
-  { label: '1 к.', value: 1 },
-  { label: '2 к.', value: 2 },
-  { label: '3 к.', value: 3 },
-  { label: '4+ к.', value: 4 },
+  { label: '1к', value: 1 },
+  { label: '2к', value: 2 },
+  { label: '3к', value: 3 },
+  { label: '4+', value: 4 },
 ];
 
 export const CatalogPage: React.FC<CatalogPageProps> = ({ 
@@ -36,7 +62,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   isLoading = false 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const [filters, setFilters] = useState<Partial<FilterState>>({
@@ -44,10 +71,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     rooms: null,
     minPrice: 0,
     maxPrice: 5000,
-    type: 'all',
   });
 
-  // Мемоизированная фильтрация и сортировка с защитой от фризов
   const filteredProperties = useMemo(() => {
     const result = properties.filter((prop) => {
       const query = searchQuery.toLowerCase().trim();
@@ -63,23 +88,14 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       
       const matchesDistrict = !filters.district || filters.district === 'all' || prop.district === filters.district;
       const matchesRooms = filters.rooms === null || (filters.rooms === 4 ? prop.rooms >= 4 : prop.rooms === filters.rooms);
+      
+      const matchesCategory = selectedCategory === 'all' || prop.type === selectedCategory;
 
-      return matchesSearch && matchesPrice && matchesDistrict && matchesRooms;
+      return matchesSearch && matchesPrice && matchesDistrict && matchesRooms && matchesCategory;
     });
 
-    return result.sort((a, b) => {
-      if (sortBy === 'price_asc') return a.priceUSD - b.priceUSD;
-      if (sortBy === 'price_desc') return b.priceUSD - a.priceUSD;
-      return b.id.localeCompare(a.id);
-    });
-  }, [properties, searchQuery, filters, sortBy]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    startTransition(() => {
-      setSearchQuery(value);
-    });
-  };
+    return result.sort((a, b) => b.id.localeCompare(a.id));
+  }, [properties, searchQuery, filters, selectedCategory]);
 
   const triggerHaptic = () => {
     if (window.Telegram?.WebApp?.HapticFeedback) {
@@ -88,123 +104,165 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   };
 
   return (
-    <div className="pb-28 px-4 pt-4 max-w-2xl mx-auto bg-[var(--tg-theme-bg-color,#ffffff)] min-h-screen">
+    <div className="pb-32 px-4 pt-4 max-w-xl mx-auto bg-[var(--tg-theme-bg-color,#ffffff)] min-h-screen">
       
-      {/* Шапка и сортировка */}
+      {/* Шапка с локацией */}
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-black tracking-tight text-[var(--tg-theme-text-color,#000000)]">
-            Аренда жилья в Бишкеке
-          </h1>
-          <p className="text-xs text-[var(--tg-theme-hint-color,#8e8e93)] mt-0.5">
-            Найдено объектов: <span className="font-bold text-[var(--tg-theme-text-color,#000000)]">{filteredProperties.length}</span>
-          </p>
+        <div className="flex items-center gap-1.5 cursor-pointer">
+          <span className="text-sm font-extrabold text-[var(--tg-theme-text-color,#000000)]">Бишкек и область</span>
+          <svg className="w-4 h-4 text-[var(--tg-theme-hint-color,#8e8e93)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
-
-        <select
-          value={sortBy}
-          onChange={(e) => {
-            triggerHaptic();
-            setSortBy(e.target.value as any);
-          }}
-          className="bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] text-xs font-bold px-3 py-2 rounded-xl outline-none border border-black/5 cursor-pointer shadow-sm"
+        <button 
+          onClick={triggerHaptic}
+          className="text-xs font-bold text-[var(--tg-theme-button-color,#2481cc)] bg-[var(--tg-theme-button-color,#2481cc)]/10 px-3.5 py-2 rounded-xl transition-all"
         >
-          <option value="newest">Сначала новые</option>
-          <option value="price_asc">Сначала дешевле</option>
-          <option value="price_desc">Сначала дороже</option>
-        </select>
+          + Разместить
+        </button>
       </div>
 
-      {/* Поиск */}
-      <div className="mb-3 relative">
-        <input
-          type="text"
-          placeholder="Поиск по району, ЖК или улице..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          className="w-full bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] placeholder-[var(--tg-theme-hint-color,#8e8e93)] text-sm rounded-2xl px-4 py-3 outline-none border border-transparent focus:border-[var(--tg-theme-button-color,#2481cc)] transition-colors shadow-sm font-medium"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--tg-theme-hint-color,#8e8e93)] px-2 py-1"
-          >
-            ✕
-          </button>
-        )}
+      {/* Строка поиска и кнопка фильтра */}
+      <div className="flex gap-2.5 mb-4">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <svg className="w-4 h-4 text-[var(--tg-theme-hint-color,#8e8e93)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            placeholder="Что ищете? (ЖК, улица, район)"
+            value={searchQuery}
+            onChange={(e) => {
+              const val = e.target.value;
+              startTransition(() => setSearchQuery(val));
+            }}
+            className="w-full bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] placeholder-[var(--tg-theme-hint-color,#8e8e93)] text-xs rounded-2xl pl-11 pr-4 py-4 outline-none font-semibold shadow-2xs border border-black/5"
+          />
+        </div>
+        
+        <button
+          onClick={() => {
+            triggerHaptic();
+            setIsFilterOpen(!isFilterOpen);
+          }}
+          className={`px-4 rounded-2xl flex items-center justify-center border transition-all ${
+            isFilterOpen 
+              ? 'bg-[var(--tg-theme-text-color,#000000)] text-[var(--tg-theme-bg-color,#ffffff)] border-transparent'
+              : 'bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] border-black/5'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+        </button>
       </div>
 
-      {/* Фильтр комнат */}
-      <div className="flex gap-2 mb-3">
-        {ROOM_OPTIONS.map((opt) => {
-          const isSelected = filters.rooms === opt.value;
+      {/* Сетка категорий 3х2 (как на референсе) */}
+      <div className="grid grid-cols-3 gap-2.5 mb-4">
+        {CATEGORIES.map((cat) => {
+          const isActive = selectedCategory === cat.type;
           return (
             <button
-              key={opt.label}
+              key={cat.id}
               onClick={() => {
                 triggerHaptic();
-                setFilters((prev) => ({ ...prev, rooms: opt.value }));
+                setSelectedCategory(cat.isMore ? 'all' : (isActive ? 'all' : cat.type));
               }}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                isSelected
-                  ? 'bg-[var(--tg-theme-text-color,#000000)] text-[var(--tg-theme-bg-color,#ffffff)] shadow-sm scale-[1.02]'
-                  : 'bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)]'
+              className={`relative overflow-hidden p-3 rounded-2xl text-left transition-all border h-28 flex flex-col justify-between ${
+                isActive
+                  ? 'bg-[var(--tg-theme-text-color,#000000)] text-[var(--tg-theme-bg-color,#ffffff)] border-transparent shadow-md'
+                  : 'bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] border-black/5 hover:border-black/10'
               }`}
             >
-              {opt.label}
+              {/* Текст в левом верхнем углу */}
+              <span className="text-xs font-extrabold tracking-tight z-10">
+                {cat.label}
+              </span>
+
+              {/* Графика в правом нижнем углу */}
+              {cat.image ? (
+                <div className="absolute right-0 bottom-0 w-16 h-16 pointer-events-none flex items-end justify-end p-1">
+                  <img src={cat.image} alt={cat.label} className="w-full h-full object-contain" />
+                </div>
+              ) : cat.isMore ? (
+                <div className="absolute right-3 bottom-3 w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-[var(--tg-theme-text-color,#000000)]">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              ) : null}
             </button>
           );
         })}
       </div>
 
-      {/* Скролл районов */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar -mx-4 px-4">
-        {DISTRICTS.map((dist) => {
-          const isSelected = (filters.district || 'all') === dist;
+      {/* Быстрые фильтры комнат */}
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
+        <span className="text-[11px] font-bold text-[var(--tg-theme-hint-color,#8e8e93)] uppercase tracking-wider mr-1">Комнаты:</span>
+        {QUICK_ROOMS.map((room) => {
+          const isSelected = filters.rooms === room.value;
           return (
             <button
-              key={dist}
+              key={room.label}
               onClick={() => {
                 triggerHaptic();
-                setFilters((prev) => ({ ...prev, district: dist }));
+                setFilters(prev => ({ ...prev, rooms: room.value }));
               }}
-              className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                 isSelected
-                  ? 'bg-[var(--tg-theme-button-color,#2481cc)] text-[var(--tg-theme-button-text-color,#ffffff)] shadow-md'
-                  : 'bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)]'
+                  ? 'bg-[var(--tg-theme-text-color,#000000)] text-[var(--tg-theme-bg-color,#ffffff)] border-transparent'
+                  : 'bg-[var(--tg-theme-secondary-bg-color,#efeff3)] text-[var(--tg-theme-text-color,#000000)] border-black/5'
               }`}
             >
-              {dist === 'all' ? 'Все районы' : dist}
+              {room.label}
             </button>
           );
         })}
       </div>
 
-      {/* Фильтр цен */}
-      <div className="flex items-center gap-2 mb-5 bg-[var(--tg-theme-secondary-bg-color,#efeff3)] p-2.5 rounded-2xl shadow-sm border border-black/5">
-        <div className="flex-1 flex items-center gap-2 px-3 bg-[var(--tg-theme-bg-color,#ffffff)] rounded-xl py-2 border border-black/5">
-          <span className="text-[11px] text-[var(--tg-theme-hint-color,#8e8e93)] font-medium">От $</span>
-          <input
-            type="number"
-            value={filters.minPrice || ''}
-            onChange={(e) => setFilters((prev) => ({ ...prev, minPrice: Number(e.target.value) }))}
-            placeholder="0"
-            className="w-full bg-transparent text-[var(--tg-theme-text-color,#000000)] text-xs outline-none font-bold"
-          />
+      {/* Панель детальных фильтров */}
+      {isFilterOpen && (
+        <div className="mb-4 p-4 bg-[var(--tg-theme-secondary-bg-color,#efeff3)] rounded-2xl border border-black/5 animate-in fade-in duration-200">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-xs font-bold text-[var(--tg-theme-text-color,#000000)]">Бюджет (USD)</span>
+            <button 
+              onClick={() => setFilters({ district: 'all', rooms: null, minPrice: 0, maxPrice: 5000 })}
+              className="text-[11px] font-semibold text-[var(--tg-theme-hint-color,#8e8e93)]"
+            >
+              Сбросить
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              placeholder="От $0"
+              value={filters.minPrice || ''}
+              onChange={(e) => setFilters(prev => ({ ...prev, minPrice: Number(e.target.value) }))}
+              className="bg-[var(--tg-theme-bg-color,#ffffff)] text-xs p-3.5 rounded-xl outline-none font-semibold text-[var(--tg-theme-text-color,#000000)] border border-black/5"
+            />
+            <input
+              type="number"
+              placeholder="До $5000"
+              value={filters.maxPrice === 5000 ? '' : filters.maxPrice}
+              onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value ? Number(e.target.value) : 5000 }))}
+              className="bg-[var(--tg-theme-bg-color,#ffffff)] text-xs p-3.5 rounded-xl outline-none font-semibold text-[var(--tg-theme-text-color,#000000)] border border-black/5"
+            />
+          </div>
         </div>
-        <div className="flex-1 flex items-center gap-2 px-3 bg-[var(--tg-theme-bg-color,#ffffff)] rounded-xl py-2 border border-black/5">
-          <span className="text-[11px] text-[var(--tg-theme-hint-color,#8e8e93)] font-medium">До $</span>
-          <input
-            type="number"
-            value={filters.maxPrice === 5000 ? '' : filters.maxPrice}
-            onChange={(e) => setFilters((prev) => ({ ...prev, maxPrice: e.target.value ? Number(e.target.value) : 5000 }))}
-            placeholder="5000"
-            className="w-full bg-transparent text-[var(--tg-theme-text-color,#000000)] text-xs outline-none font-bold"
-          />
-        </div>
+      )}
+
+      {/* Лента объектов */}
+      <div className="flex items-center justify-between mb-3.5">
+        <h2 className="text-base font-black tracking-tight text-[var(--tg-theme-text-color,#000000)]">
+          Могут подойти
+        </h2>
+        <span className="text-xs font-semibold text-[var(--tg-theme-hint-color,#8e8e93)]">
+          {filteredProperties.length} предложений
+        </span>
       </div>
 
-      {/* Рендер списка / скелетонов */}
       {isLoading || isPending ? (
         <div className="flex flex-col gap-4">
           {[1, 2, 3].map((n) => (
@@ -212,7 +270,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           ))}
         </div>
       ) : filteredProperties.length > 0 ? (
-        <div className="flex flex-col gap-4 animate-in fade-in duration-300">
+        <div className="flex flex-col gap-4">
           {filteredProperties.map((property) => (
             <PropertyCard
               key={property.id}
@@ -222,27 +280,18 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 px-4">
-          <p className="text-sm font-bold text-[var(--tg-theme-text-color,#000000)] mb-1">
-            Ничего не найдено
-          </p>
-          <p className="text-xs text-[var(--tg-theme-hint-color,#8e8e93)] mb-4">
-            Попробуйте изменить параметры поиска или сбросить фильтры
-          </p>
+        <div className="text-center py-16">
+          <p className="text-sm font-bold text-[var(--tg-theme-text-color,#000000)] mb-1">Ничего не найдено</p>
+          <p className="text-xs text-[var(--tg-theme-hint-color,#8e8e93)] mb-4">Попробуйте изменить параметры поиска</p>
           <button
             onClick={() => {
               setSearchQuery('');
-              setFilters({
-                district: 'all',
-                rooms: null,
-                minPrice: 0,
-                maxPrice: 5000,
-                type: 'all',
-              });
+              setSelectedCategory('all');
+              setFilters({ district: 'all', rooms: null, minPrice: 0, maxPrice: 5000 });
             }}
-            className="px-5 py-3 rounded-2xl text-xs font-bold bg-[var(--tg-theme-text-color,#000000)] text-[var(--tg-theme-bg-color,#ffffff)] active:scale-95 transition-all shadow-lg"
+            className="px-5 py-2.5 bg-[var(--tg-theme-text-color,#000000)] text-[var(--tg-theme-bg-color,#ffffff)] rounded-xl text-xs font-bold"
           >
-            Сбросить фильтры
+            Сбросить всё
           </button>
         </div>
       )}
