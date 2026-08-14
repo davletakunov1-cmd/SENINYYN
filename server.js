@@ -9,7 +9,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 const DB_FILE = './user_phones.json';
 
 if (!BOT_TOKEN) {
-  console.error('❌ Ошибка: BOT_TOKEN не задан в .env файле');
+  console.error('❌ Ошибка: BOT_TOKEN или TELEGRAM_BOT_TOKEN не задан в .env файле');
   process.exit(1);
 }
 
@@ -34,39 +34,41 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// --- ЛОГИКА ТЕЛЕГРАМ-БОТА ---
+// --- 1. ЛОГИКА ТЕЛЕГРАМ-БОТА ---
 
-// Функция отображения статуса пользователю
 const sendUserStatus = (ctx) => {
   const userId = ctx.from.id.toString();
   const existingPhone = userPhones[userId];
 
   if (existingPhone) {
-    // Пользователь уже подтвержден — показываем статус и inline-кнопку для смены
     ctx.reply(
-      `✅ Ваш номер **${existingPhone}** уже подтвержден!\n\nВы можете свободно публиковать объявления в мини-приложении.`,
+      `✨ *Ваш профиль подтвержден*\n\n` +
+      `📞 Номер: *${existingPhone}*\n` +
+      `🚀 *Статус:* Активен\n\n` +
+      `Вы успешно авторизованы в системе. Теперь вы можете беспрепятственно публиковать объявления в нашем приложении.`,
       {
         parse_mode: 'Markdown',
-        reply_markup: {
-          remove_keyboard: true // Убираем обычную клавиатуру снизу
-        }
+        reply_markup: { remove_keyboard: true }
       }
     );
     
-    // Дополнительно отправляем аккуратную инлайн-кнопку
     ctx.reply(
-      'Хотите привязать другой номер?',
+      'Настройки профиля:',
       Markup.inlineKeyboard([
-        Markup.button.callback('🔄 Сменить номер', 'change_phone')
+        Markup.button.callback('🔄 Обновить номер телефона', 'change_phone')
       ])
     );
   } else {
-    // Пользователь еще НЕ подтвержден — запрашиваем контакт
     ctx.reply(
-      'Добро пожаловать! Чтобы публиковать объявления без спама, пожалуйста, подтвердите ваш номер телефона.',
-      Markup.keyboard([
-        [Markup.button.contactRequest('📱 Подтвердить номер телефона')]
-      ]).resize().oneTime()
+      `👋 *Добро пожаловать в Bishkek Rent!*\n\n` +
+      `Чтобы поддерживать безопасность и исключить спам, нам необходимо подтвердить ваш номер телефона.\n\n` +
+      `Это займет всего 5 секунд. Нажмите кнопку ниже 👇`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.keyboard([
+          [Markup.button.contactRequest('📱 Подтвердить номер телефона')]
+        ]).resize().oneTime()
+      }
     );
   }
 };
@@ -75,24 +77,27 @@ bot.start((ctx) => {
   sendUserStatus(ctx);
 });
 
-// Обработка кнопки "🔄 Сменить номер"
+// Обработка инлайн-кнопки сброса номера
 bot.action('change_phone', (ctx) => {
   ctx.answerCbQuery();
   const userId = ctx.from.id.toString();
   
-  // Удаляем старый номер
   delete userPhones[userId];
   saveData();
 
   ctx.reply(
-    'Старая привязка сброшена. Нажмите кнопку ниже, чтобы отправить новый номер телефона:',
-    Markup.keyboard([
-      [Markup.button.contactRequest('📱 Отправить новый номер')]
-    ]).resize().oneTime()
+    `⚙️ *Смена номера*\n\n` +
+    `Предыдущий номер удален из базы. Пожалуйста, отправьте актуальный контакт для продолжения работы.`,
+    {
+      parse_mode: 'Markdown',
+      ...Markup.keyboard([
+        [Markup.button.contactRequest('📱 Отправить новый номер')]
+      ]).resize().oneTime()
+    }
   );
 });
 
-// Обработка получения контакта
+// Получение контакта от пользователя
 bot.on('contact', (ctx) => {
   const userId = ctx.from.id.toString();
   const phoneNumber = ctx.message.contact.phone_number;
@@ -100,16 +105,21 @@ bot.on('contact', (ctx) => {
   userPhones[userId] = phoneNumber;
   saveData();
 
-  ctx.reply('🎉 Спасибо! Номер успешно сохранен. Теперь вы можете вернуться в мини-приложение и опубликовать объявление.', {
-    reply_markup: { remove_keyboard: true }
-  });
+  ctx.reply(
+    `✅ *Отлично!*\n\n` +
+    `Ваш номер *${phoneNumber}* успешно привязан к аккаунту. Возвращайтесь в приложение для публикации объявлений.`,
+    {
+      parse_mode: 'Markdown',
+      reply_markup: { remove_keyboard: true }
+    }
+  );
 });
 
 bot.launch();
 console.log('🤖 Telegram-бот запущен');
 
 
-// --- БЭКЕНД API ДЛЯ МИНИ-ПРИЛОЖЕНИЯ ---
+// --- 2. БЭКЕНД API ДЛЯ МИНИ-ПРИЛОЖЕНИЯ ---
 
 function verifyTelegramInitData(initDataString, botToken) {
   try {
