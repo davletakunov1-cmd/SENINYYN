@@ -1,13 +1,14 @@
-require('dotenv').config();
-const express = require('express');
-const { Telegraf } = require('telegraf');
-const crypto = require('crypto');
-const cors = require('cors');
+import 'dotenv/config';
+import express from 'express';
+import { Telegraf } from 'telegraf';
+import crypto from 'crypto';
+import cors from 'cors';
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+// Поддерживаем оба варианта названия переменной
+const BOT_TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
 if (!BOT_TOKEN) {
-  console.error('❌ Ошибка: TELEGRAM_BOT_TOKEN не задан в .env файле');
+  console.error('❌ Ошибка: BOT_TOKEN или TELEGRAM_BOT_TOKEN не задан в .env файле');
   process.exit(1);
 }
 
@@ -17,8 +18,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Простая база данных в памяти (в продакшене лучше использовать MongoDB/PostgreSQL)
-// Хранит связку: telegram_id -> phone_number
 const userPhones = new Map();
 
 // --- 1. ЛОГИКА ТЕЛЕГРАМ-БОТА ---
@@ -38,12 +37,10 @@ bot.start((ctx) => {
   );
 });
 
-// Обработка получения контакта от пользователя
 bot.on('contact', (ctx) => {
   const userId = ctx.from.id;
   const phoneNumber = ctx.message.contact.phone_number;
 
-  // Сохраняем номер
   userPhones.set(userId, phoneNumber);
 
   ctx.reply('Спасибо! Номер успешно подтвержден. Теперь вы можете вернуться в приложение и создать объявление.', {
@@ -51,14 +48,11 @@ bot.on('contact', (ctx) => {
   });
 });
 
-// Запускаем бота
 bot.launch();
 console.log('🤖 Telegram-бот запущен');
 
-
 // --- 2. БЭКЕНД API ДЛЯ РЕАКТ-ПРИЛОЖЕНИЯ ---
 
-// Проверка подлинности initData от Telegram WebApp
 function verifyTelegramInitData(initDataString, botToken) {
   try {
     const urlParams = new URLSearchParams(initDataString);
@@ -83,7 +77,6 @@ function verifyTelegramInitData(initDataString, botToken) {
   }
 }
 
-// Эндпоинт, который запрашивает фронтенд
 app.get('/api/get-phone', (req, res) => {
   const initData = req.headers['x-telegram-init-data'];
   
@@ -101,7 +94,6 @@ app.get('/api/get-phone', (req, res) => {
   res.json({ verified: true, phone });
 });
 
-// Запуск сервера API
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🌐 Бэкенд сервер запущен на порту ${PORT}`);
